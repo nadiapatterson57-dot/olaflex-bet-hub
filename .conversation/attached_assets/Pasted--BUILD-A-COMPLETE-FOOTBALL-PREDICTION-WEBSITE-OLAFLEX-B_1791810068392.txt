@@ -1,0 +1,290 @@
+# BUILD A COMPLETE FOOTBALL PREDICTION WEBSITE — OLAFLEX BET HUB
+
+Act as a professional full-stack developer, UI/UX designer, and database engineer. Build a complete, production-ready football prediction website called **OlaFlex Bet Hub**.
+
+The website will allow me, the administrator, to publish football predictions, SportyBet booking codes, betting odds, match selections, football analysis, and match results. Visitors will be able to browse predictions and copy booking codes with one click.
+
+Build the actual functional application, not just a design or frontend prototype.
+
+## 1. TECHNOLOGY STACK
+
+Use the following technologies:
+
+* Frontend: React with TypeScript.
+* Styling: Tailwind CSS.
+* Backend: Node.js with Express.
+* Database: Replit's supported persistent database, preferably PostgreSQL through Replit's database integration.
+* Authentication: Secure server-side administrator authentication.
+* Deployment: Configure the project for deployment on Replit.
+
+Do not use Supabase or Firebase.
+
+Do not store the website's main prediction data exclusively in browser LocalStorage. Use a shared database so that predictions published by the administrator are visible to every visitor.
+
+All prediction records must remain available after page refreshes, browser restarts, server restarts, and redeployment, provided the persistent database remains connected.
+
+Use environment variables or Replit Secrets for sensitive configuration. Never expose database credentials, session secrets, or passwords in frontend code.
+
+## 2. BRANDING AND VISUAL DESIGN
+
+Website name: OlaFlex Bet Hub.
+
+Create a premium sports prediction website with:
+
+* A dark black and navy background.
+* Bright green accents.
+* White and light-grey text.
+* Modern typography.
+* Professional football match cards.
+* Smooth, subtle animations.
+* Clear buttons and readable odds.
+* A responsive layout for mobile phones, tablets, and desktop computers.
+
+Create a simple text-based logo displaying "OlaFlex Bet Hub".
+
+The design should feel like a professional football statistics and predictions platform, without impersonating SportyBet or copying its official branding.
+
+## 3. HOMEPAGE
+
+Build a homepage containing:
+
+* Header with the OlaFlex Bet Hub logo.
+* Navigation: Home, Today's Tips, Free Tips, Premium Tips, Results, Blog, and Contact.
+* Hero headline: "Football Predictions & SportyBet Booking Codes".
+* Subtitle: "Explore match predictions, compare odds, and copy booking codes with ease."
+* A prominent "Explore Today's Tips" button.
+* Today's Predictions section.
+* Free Tips section.
+* Premium Tips section.
+* Accumulator Predictions section.
+* Recent Results section.
+* Search bar for finding predictions.
+* Filters for date, league, category, and result status.
+* Footer with contact details, social links, privacy policy, terms, and responsible gambling information.
+
+Only show published predictions on public pages. Drafts must remain private to the administrator.
+
+If there are no published predictions, display a professional empty state instead of fake predictions.
+
+## 4. PREDICTION MANAGEMENT
+
+Each prediction must support the following fields:
+
+* Unique prediction ID.
+* Prediction title.
+* Slug for its public page.
+* Publication date and time.
+* Match date and kickoff time.
+* Football league or competition.
+* Home team.
+* Away team.
+* Home and away team logos, if available.
+* Betting market.
+* Selected outcome.
+* Individual odds.
+* Combined accumulator odds.
+* SportyBet booking code.
+* Free or Premium category.
+* Risk label: Low, Medium, or High.
+* Match analysis.
+* Optional featured image.
+* Publication status: Draft, Published, or Archived.
+* Match result: Pending, Won, Lost, or Void.
+
+Support single-match predictions and accumulators containing multiple matches.
+
+Automatically calculate combined odds by multiplying individual decimal odds when appropriate. Allow the administrator to edit the displayed combined odds manually when needed.
+
+Validate odds and booking-code fields. Preserve booking codes exactly as entered.
+
+## 5. COPY BOOKING CODE FUNCTIONALITY
+
+Every published prediction should display a prominent button labelled "COPY SPORTYBET CODE".
+
+When a visitor clicks the button:
+
+1. Copy the exact booking code to the clipboard.
+2. Show a notification saying "Booking code copied successfully!"
+3. If clipboard access fails, show the code in a selectable field with instructions to copy it manually.
+
+Add a "Share on WhatsApp" button that generates a shareable message containing the prediction title, odds, booking code, and website link.
+
+Add an "Open SportyBet" button that links to the official SportyBet website. Keep external links configurable.
+
+Do not fabricate booking codes or claim codes have been verified unless they have actually been checked.
+
+## 6. SECURE ADMIN DASHBOARD
+
+Create a separate administrator area at /admin.
+
+The dashboard must be protected by server-side authentication. Only an authorized administrator should be able to create, edit, publish, or delete content.
+
+Dashboard features:
+
+* Overview of total predictions.
+* Create prediction.
+* Edit prediction.
+* Delete prediction with confirmation.
+* Save as draft.
+* Publish and unpublish.
+* Archive old predictions.
+* Manage booking codes.
+* Manage odds and match selections.
+* Add multiple matches to an accumulator.
+* Upload prediction images.
+* Manage Free and Premium categories.
+* Update match results.
+* Edit website announcements.
+* Manage blog posts.
+* Edit contact details and social media links.
+* Search, sort, and filter existing predictions.
+* Preview a prediction before publishing.
+* Export prediction data for backup.
+* Import a valid backup after confirmation.
+
+All changes made through the dashboard must be saved to the database and reflected on the public website.
+
+Use server-side validation and authorization for every write operation. Hiding an admin button in the frontend is not sufficient security.
+
+Provide a secure initial administrator setup process using Replit Secrets or a protected setup flow. Never hardcode a default password.
+
+## 7. DATABASE STRUCTURE
+
+Create suitable database tables for:
+
+* Administrators.
+* Predictions.
+* Prediction matches.
+* Betting selections and odds.
+* Prediction results.
+* Website settings.
+* Blog posts.
+* Optional prediction analytics.
+
+Use proper primary keys, relationships, timestamps, and indexes.
+
+Each prediction may contain multiple match records.
+
+Keep historical predictions intact when results are updated. Do not silently rewrite previously published booking codes, selections, or odds when settling a prediction.
+
+Store the actual prediction records on the server so every visitor sees the same published content.
+
+Implement database migrations and clear setup instructions.
+
+## 8. RESULTS PAGE AND STATISTICS
+
+Create a public results page with filters for date and status.
+
+Display:
+
+* Won predictions.
+* Lost predictions.
+* Void predictions.
+* Pending predictions.
+* Prediction title.
+* Original selections and odds.
+* Publication date.
+* Final status.
+
+Calculate statistics from actual database records, including:
+
+* Total settled predictions.
+* Number won.
+* Number lost.
+* Number void.
+* Win rate.
+
+Define the win-rate calculation clearly. Exclude pending predictions and, where appropriate, void predictions from the denominator.
+
+Do not generate fake winning records, fake testimonials, or guaranteed-win claims.
+
+## 9. FREE AND PREMIUM PREDICTIONS
+
+Allow the administrator to categorize each prediction as Free or Premium.
+
+Free predictions:
+
+* Accessible to all visitors.
+* Display full prediction details and booking codes.
+* Include the copy-code button.
+
+Premium predictions:
+
+* Display a limited public preview.
+* Keep the full code and protected details unavailable to unauthorized visitors.
+* Prepare the system for future integration with a supported payment provider.
+* Do not unlock premium predictions based solely on frontend state or an unverified payment confirmation.
+
+The initial website must work without requiring a payment system.
+
+## 10. ADDITIONAL FEATURES
+
+Include:
+
+* Mobile-first responsive design.
+* SEO-friendly page titles and descriptions.
+* Individual shareable prediction pages.
+* Search and filtering.
+* WhatsApp sharing.
+* Contact form with server-side validation and spam protection.
+* Loading states and helpful error messages.
+* Pagination when the number of predictions grows.
+* Accessible forms and buttons.
+* Basic rate limiting for sensitive endpoints.
+* Secure session handling.
+* Privacy policy and terms pages.
+* Responsible gambling information for adults.
+
+Display a disclaimer that football predictions are uncertain, odds may change, booking codes can expire, and no outcome is guaranteed.
+
+## 11. PERSISTENCE AND ERROR HANDLING
+
+This is a critical requirement.
+
+Test that:
+
+* A prediction created by the administrator is stored in the persistent database.
+* Refreshing the page does not delete the prediction.
+* Restarting the server does not delete saved records.
+* Visitors on different devices can see the same published predictions.
+* Edits appear on the public website.
+* Drafts are not publicly accessible.
+* Unauthorized users cannot modify predictions.
+* Deleting a record requires confirmation.
+* Database errors produce helpful messages instead of silently losing data.
+
+Do not use in-memory arrays as the primary database.
+
+Do not seed demo records every time the server starts.
+
+## 12. BUILD AND DELIVERY PROCESS
+
+Build the project in working stages:
+
+Stage 1: Create the responsive website layout and navigation.
+
+Stage 2: Set up the persistent database, migrations, and backend API.
+
+Stage 3: Implement secure administrator authentication.
+
+Stage 4: Build the prediction creation and editing dashboard.
+
+Stage 5: Connect public prediction cards to the database.
+
+Stage 6: Implement copy-code, search, filters, sharing, and results.
+
+Stage 7: Test persistence, security, mobile responsiveness, and deployment.
+
+Do not stop after producing a static mockup. Continue until the core workflows work end to end.
+
+If any external integration requires credentials, tell me exactly what is needed and use safe placeholders until configured.
+
+## FINAL OBJECTIVE
+
+Deliver a functioning, deployable website called OlaFlex Bet Hub that I can manage independently.
+
+I should be able to open the administrator dashboard, add today's football predictions, enter SportyBet booking codes and odds, publish them, and have visitors immediately see the new predictions and copy the codes.
+
+I should not need to edit source code every time I want to publish a new prediction.
+
+The website must use a shared persistent database, must not use Supabase or Firebase, and must preserve saved content across refreshes and server restarts.

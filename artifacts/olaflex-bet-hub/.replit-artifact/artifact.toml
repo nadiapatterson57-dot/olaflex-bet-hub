@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "OlaFlex Bet Hub"
+description = "A football predictions platform where visitors browse published tips and booking codes, while an authenticated administrator manages predictions, accumulators, results, and site content."
+version = "1.0.0"
+id = "artifacts/olaflex-bet-hub"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20937
+
+[services.development]
+run = "pnpm --filter @workspace/olaflex-bet-hub run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/olaflex-bet-hub", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/olaflex-bet-hub/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20937"
+BASE_PATH = "/"
