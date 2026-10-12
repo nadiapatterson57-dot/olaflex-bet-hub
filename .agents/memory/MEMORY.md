@@ -1,0 +1,1 @@
+- [OlaFlex publication rules](olaflex-publication-rules.md) — never invent prediction records or expose protected premium details publicly.

@@ -3,20 +3,27 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: OlaFlex Bet Hub public and administrator API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: predictions
+    description: Public football tips and settled results
+  - name: admin
+    description: Administrator-only content management
+  - name: content
+    description: Public site settings, blog posts, and contact
+  - name: storage
+    description: Administrator image uploads
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +31,680 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /predictions:
+    get:
+      operationId: listPredictions
+      tags: [predictions]
+      summary: Browse published predictions
+      parameters:
+        - in: query
+          name: search
+          schema: { type: string, maxLength: 120 }
+        - in: query
+          name: date
+          schema: { type: string, format: date }
+        - in: query
+          name: league
+          schema: { type: string, maxLength: 120 }
+        - in: query
+          name: category
+          schema: { $ref: "#/components/schemas/PredictionCategory" }
+        - in: query
+          name: result
+          schema: { $ref: "#/components/schemas/PredictionResult" }
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, default: 1 }
+        - in: query
+          name: pageSize
+          schema: { type: integer, minimum: 1, maximum: 50, default: 12 }
+      responses:
+        "200":
+          description: Published predictions only; premium details are redacted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PredictionPage"
+  /predictions/{slug}:
+    get:
+      operationId: getPrediction
+      tags: [predictions]
+      summary: Get one published prediction
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Public prediction; private premium details are omitted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Prediction"
+        "404":
+          description: Prediction not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /results:
+    get:
+      operationId: getResults
+      tags: [predictions]
+      summary: Get settled prediction records and actual statistics
+      parameters:
+        - in: query
+          name: date
+          schema: { type: string, format: date }
+        - in: query
+          name: result
+          schema: { $ref: "#/components/schemas/PredictionResult" }
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, default: 1 }
+        - in: query
+          name: pageSize
+          schema: { type: integer, minimum: 1, maximum: 50, default: 12 }
+      responses:
+        "200":
+          description: Results derived from saved predictions; void and pending are excluded from win-rate denominator.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResultsResponse"
+  /settings:
+    get:
+      operationId: getPublicSettings
+      tags: [content]
+      summary: Get public site settings
+      responses:
+        "200":
+          description: Contact links, announcement, and configurable external link.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SiteSettings"
+  /blog:
+    get:
+      operationId: listBlogPosts
+      tags: [content]
+      summary: List published blog posts
+      responses:
+        "200":
+          description: Published posts only.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/BlogPost" }
+  /blog/{slug}:
+    get:
+      operationId: getBlogPost
+      tags: [content]
+      summary: Get a published blog post
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Blog post.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BlogPost" }
+        "404":
+          description: Post not found.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+  /contact:
+    post:
+      operationId: sendContactMessage
+      tags: [content]
+      summary: Submit a contact message
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ContactMessageInput" }
+      responses:
+        "201":
+          description: Message stored for administrator follow-up.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SuccessMessage" }
+        "400":
+          description: Invalid message.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+        "429":
+          description: Too many submissions.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+  /admin/access:
+    get:
+      operationId: getAdminAccess
+      tags: [admin]
+      summary: Check current user's server-verified administrator access
+      responses:
+        "200":
+          description: Access granted.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminAccess" }
+        "401":
+          description: Sign-in required.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+        "403":
+          description: Signed-in account is not the configured administrator.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+  /admin/summary:
+    get:
+      operationId: getAdminSummary
+      tags: [admin]
+      summary: Get administrator dashboard counts and recent performance
+      responses:
+        "200":
+          description: Database-backed dashboard summary.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminSummary" }
+  /admin/contact-messages:
+    get:
+      operationId: listAdminContactMessages
+      tags: [admin]
+      summary: List recent contact form submissions
+      responses:
+        "200":
+          description: Recent messages submitted through the public contact form.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminContactMessages" }
+  /admin/predictions:
+    get:
+      operationId: listAdminPredictions
+      tags: [admin]
+      summary: List all predictions including drafts and archived records
+      parameters:
+        - in: query
+          name: search
+          schema: { type: string, maxLength: 120 }
+        - in: query
+          name: status
+          schema: { $ref: "#/components/schemas/PublicationStatus" }
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, default: 1 }
+        - in: query
+          name: pageSize
+          schema: { type: integer, minimum: 1, maximum: 100, default: 25 }
+      responses:
+        "200":
+          description: All matching administrator-owned content.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PredictionPage" }
+    post:
+      operationId: createPrediction
+      tags: [admin]
+      summary: Create a prediction or accumulator
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PredictionInput" }
+      responses:
+        "201":
+          description: Prediction saved.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Prediction" }
+        "400":
+          description: Invalid prediction fields.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+  /admin/predictions/{id}:
+    patch:
+      operationId: updatePrediction
+      tags: [admin]
+      summary: Edit a prediction or update its result
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PredictionInput" }
+      responses:
+        "200":
+          description: Updated prediction.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Prediction" }
+        "404":
+          description: Prediction not found.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+    delete:
+      operationId: deletePrediction
+      tags: [admin]
+      summary: Permanently delete a prediction after confirmation
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "204": { description: Prediction deleted. }
+        "404":
+          description: Prediction not found.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+  /admin/settings:
+    put:
+      operationId: updateSiteSettings
+      tags: [admin]
+      summary: Update public contact, social, announcement, and link settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SiteSettingsInput" }
+      responses:
+        "200":
+          description: Updated settings.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SiteSettings" }
+  /admin/blog:
+    get:
+      operationId: listAdminBlogPosts
+      tags: [admin]
+      summary: List all blog posts
+      responses:
+        "200":
+          description: Published and draft posts.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/BlogPost" }
+    post:
+      operationId: createBlogPost
+      tags: [admin]
+      summary: Create a blog post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BlogPostInput" }
+      responses:
+        "201":
+          description: Post saved.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BlogPost" }
+  /admin/blog/{id}:
+    patch:
+      operationId: updateBlogPost
+      tags: [admin]
+      summary: Edit a blog post
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BlogPostInput" }
+      responses:
+        "200":
+          description: Updated post.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BlogPost" }
+    delete:
+      operationId: deleteBlogPost
+      tags: [admin]
+      summary: Delete a blog post
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "204": { description: Post deleted. }
+  /admin/export:
+    get:
+      operationId: exportBackup
+      tags: [admin]
+      summary: Export saved prediction, settings, and blog data
+      responses:
+        "200":
+          description: Downloadable JSON backup.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Backup" }
+  /admin/import:
+    post:
+      operationId: importBackup
+      tags: [admin]
+      summary: Import a validated backup after administrator confirmation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Backup" }
+      responses:
+        "200":
+          description: Import completed.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SuccessMessage" }
+        "400":
+          description: Backup validation failed.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+  /storage/uploads/request-url:
+    post:
+      operationId: requestUploadUrl
+      tags: [storage]
+      summary: Request an authenticated administrator image upload URL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UploadUrlRequest" }
+      responses:
+        "200":
+          description: Presigned upload URL and image object path.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UploadUrlResponse" }
+        "400":
+          description: Unsupported or invalid file.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+  /storage/objects/{objectPath}:
+    get:
+      operationId: getStorageObject
+      tags: [storage]
+      summary: Serve an uploaded public prediction image
+      parameters:
+        - in: path
+          name: objectPath
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Image stream.
+          content:
+            "*/*":
+              schema: { type: string, format: binary }
+        "404":
+          description: Image not found.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorEnvelope" }
 components:
   schemas:
     HealthStatus:
       type: object
       properties:
-        status:
+        status: { type: string }
+      required: [status]
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+    SuccessMessage:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string }
+    PredictionCategory:
+      type: string
+      enum: [free, premium]
+    PublicationStatus:
+      type: string
+      enum: [draft, published, archived]
+    PredictionResult:
+      type: string
+      enum: [pending, won, lost, void]
+    RiskLevel:
+      type: string
+      enum: [low, medium, high]
+    PredictionMatch:
+      type: object
+      required: [id, homeTeam, awayTeam, competition, market, selection, odds, kickoffAt]
+      properties:
+        id: { type: string, format: uuid }
+        homeTeam: { type: string }
+        awayTeam: { type: string }
+        homeLogoUrl: { type: ["string", "null"] }
+        awayLogoUrl: { type: ["string", "null"] }
+        competition: { type: string }
+        market: { type: string }
+        selection: { type: string }
+        odds: { type: number, minimum: 1.01 }
+        kickoffAt: { type: string, format: date-time }
+    PredictionMatchInput:
+      type: object
+      required: [homeTeam, awayTeam, competition, market, selection, odds, kickoffAt]
+      properties:
+        homeTeam: { type: string, minLength: 1, maxLength: 120 }
+        awayTeam: { type: string, minLength: 1, maxLength: 120 }
+        homeLogoUrl: { type: ["string", "null"], format: uri }
+        awayLogoUrl: { type: ["string", "null"], format: uri }
+        competition: { type: string, minLength: 1, maxLength: 160 }
+        market: { type: string, minLength: 1, maxLength: 120 }
+        selection: { type: string, minLength: 1, maxLength: 160 }
+        odds: { type: number, minimum: 1.01, maximum: 10000 }
+        kickoffAt: { type: string, format: date-time }
+    Prediction:
+      type: object
+      required: [id, title, slug, publishedAt, category, risk, status, result, matches, combinedOdds, isAccumulator, isLocked]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        slug: { type: string }
+        publishedAt: { type: ["string", "null"], format: date-time }
+        category: { $ref: "#/components/schemas/PredictionCategory" }
+        risk: { $ref: "#/components/schemas/RiskLevel" }
+        status: { $ref: "#/components/schemas/PublicationStatus" }
+        result: { $ref: "#/components/schemas/PredictionResult" }
+        matches:
+          type: array
+          items: { $ref: "#/components/schemas/PredictionMatch" }
+        combinedOdds: { type: ["number", "null"] }
+        combinedOddsOverride: { type: ["number", "null"] }
+        bookingCode: { type: ["string", "null"] }
+        analysis: { type: ["string", "null"] }
+        imagePath: { type: ["string", "null"] }
+        isAccumulator: { type: boolean }
+        isLocked: { type: boolean }
+    PredictionPage:
+      type: object
+      required: [items, page, pageSize, total]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Prediction" }
+        page: { type: integer }
+        pageSize: { type: integer }
+        total: { type: integer }
+    PredictionInput:
+      type: object
+      required: [title, slug, category, risk, status, result, matches]
+      properties:
+        title: { type: string, minLength: 3, maxLength: 180 }
+        slug: { type: string, minLength: 3, maxLength: 180, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+        category: { $ref: "#/components/schemas/PredictionCategory" }
+        risk: { $ref: "#/components/schemas/RiskLevel" }
+        status: { $ref: "#/components/schemas/PublicationStatus" }
+        result: { $ref: "#/components/schemas/PredictionResult" }
+        bookingCode: { type: ["string", "null"], maxLength: 100 }
+        analysis: { type: ["string", "null"], maxLength: 12000 }
+        imagePath: { type: ["string", "null"], maxLength: 600 }
+        combinedOddsOverride: { type: ["number", "null"], minimum: 1.01, maximum: 100000000 }
+        matches:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items: { $ref: "#/components/schemas/PredictionMatchInput" }
+    ResultsStatistics:
+      type: object
+      required: [settled, won, lost, void, winRate]
+      properties:
+        settled: { type: integer }
+        won: { type: integer }
+        lost: { type: integer }
+        void: { type: integer }
+        winRate:
+          type: number
+          description: Wins divided by won plus lost; void and pending are excluded.
+    ResultsResponse:
+      type: object
+      required: [statistics, predictions, page, pageSize, total]
+      properties:
+        statistics: { $ref: "#/components/schemas/ResultsStatistics" }
+        predictions:
+          type: array
+          items: { $ref: "#/components/schemas/Prediction" }
+        page: { type: integer }
+        pageSize: { type: integer }
+        total: { type: integer }
+    AdminAccess:
+      type: object
+      required: [isAdmin, email]
+      properties:
+        isAdmin: { type: boolean }
+        email: { type: string, format: email }
+    AdminSummary:
+      type: object
+      required: [total, published, drafts, pending, won, lost, void, winRate]
+      properties:
+        total: { type: integer }
+        published: { type: integer }
+        drafts: { type: integer }
+        pending: { type: integer }
+        won: { type: integer }
+        lost: { type: integer }
+        void: { type: integer }
+        winRate: { type: number }
+    SiteSettings:
+      type: object
+      required: [contactEmail, contactPhone, whatsappNumber, instagramUrl, facebookUrl, xUrl, announcement, sportyBetUrl]
+      properties:
+        contactEmail: { type: string }
+        contactPhone: { type: string }
+        whatsappNumber: { type: string }
+        instagramUrl: { type: string }
+        facebookUrl: { type: string }
+        xUrl: { type: string }
+        announcement: { type: string }
+        sportyBetUrl: { type: string }
+    SiteSettingsInput:
+      type: object
+      required: [contactEmail, contactPhone, whatsappNumber, instagramUrl, facebookUrl, xUrl, announcement, sportyBetUrl]
+      properties:
+        contactEmail: { type: string, maxLength: 254 }
+        contactPhone: { type: string, maxLength: 40 }
+        whatsappNumber: { type: string, maxLength: 40 }
+        instagramUrl: { type: string, maxLength: 500 }
+        facebookUrl: { type: string, maxLength: 500 }
+        xUrl: { type: string, maxLength: 500 }
+        announcement: { type: string, maxLength: 500 }
+        sportyBetUrl: { type: string, maxLength: 500 }
+    BlogPost:
+      type: object
+      required: [id, title, slug, excerpt, content, status, publishedAt]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        slug: { type: string }
+        excerpt: { type: string }
+        content: { type: string }
+        status: { $ref: "#/components/schemas/PublicationStatus" }
+        publishedAt: { type: ["string", "null"], format: date-time }
+        coverImagePath: { type: ["string", "null"] }
+    BlogPostInput:
+      type: object
+      required: [title, slug, excerpt, content, status]
+      properties:
+        title: { type: string, minLength: 3, maxLength: 180 }
+        slug: { type: string, minLength: 3, maxLength: 180, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+        excerpt: { type: string, maxLength: 500 }
+        content: { type: string, minLength: 1, maxLength: 30000 }
+        status: { $ref: "#/components/schemas/PublicationStatus" }
+        coverImagePath: { type: ["string", "null"], maxLength: 600 }
+    ContactMessageInput:
+      type: object
+      required: [name, email, subject, message]
+      properties:
+        name: { type: string, minLength: 2, maxLength: 120 }
+        email: { type: string, format: email, maxLength: 254 }
+        subject: { type: string, minLength: 2, maxLength: 160 }
+        message: { type: string, minLength: 10, maxLength: 4000 }
+        website: { type: string, maxLength: 200, description: Honeypot field; must remain blank. }
+    AdminContactMessage:
+      type: object
+      required: [id, name, email, subject, message, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        email: { type: string, format: email }
+        subject: { type: string }
+        message: { type: string }
+        createdAt: { type: string, format: date-time }
+    AdminContactMessages:
+      type: array
+      items: { $ref: "#/components/schemas/AdminContactMessage" }
+    Backup:
+      type: object
+      required: [version, exportedAt, predictions, blogPosts, settings]
+      properties:
+        version: { type: integer, enum: [1] }
+        exportedAt: { type: string, format: date-time }
+        predictions:
+          type: array
+          items: { $ref: "#/components/schemas/PredictionInput" }
+        blogPosts:
+          type: array
+          items: { $ref: "#/components/schemas/BlogPostInput" }
+        settings: { $ref: "#/components/schemas/SiteSettingsInput" }
+    UploadUrlRequest:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 255 }
+        size: { type: integer, minimum: 1, maximum: 5242880 }
+        contentType:
           type: string
-      required:
-        - status
-
+          enum: [image/jpeg, image/png, image/webp, image/avif]
+    UploadUrlResponse:
+      type: object
+      required: [uploadURL, objectPath]
+      properties:
+        uploadURL: { type: string, format: uri }
+        objectPath: { type: string }
+        metadata: { $ref: "#/components/schemas/UploadUrlRequest" }
